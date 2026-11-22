@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BRACU HRMS Helper</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="core.js" defer></script>
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="identity"><div class="symbol">H<span>+</span></div><div><div class="brand">BRACU <span>HRMS Helper</span></div><div class="brand-sub">Your attendance, decoded.</div></div></div>
+      <div class="header-actions"><a href="https://hrms.bracu.ac.bd/dashboard" target="_blank" rel="noopener" title="Open HRMS" class="header-link">Open HRMS ↗</a></div>
+    </header>
+    <section class="hero">
+      <div class="hero-top"><span class="kicker">ATTENDANCE OVERVIEW</span><span class="privacy"><span class="privacy-dot"></span>LOCAL ONLY</span></div>
+      <div class="hero-middle"><div><div class="muted-light">Total hours logged</div><div class="hero-value" id="total">0h 00m</div></div><div class="hero-right"><label for="month">MONTH</label><input type="month" id="month" aria-label="Select month"></div></div>
+      <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+      <div class="hero-foot"><span id="progress-label">Set working days to track a target</span><span id="percentage">—</span></div>
+    </section>
+    <div class="container">
+      <section class="metric-grid">
+        <div class="metric"><div class="metric-head"><span>Monthly target</span><span class="metric-mark">◎</span></div><strong id="target">Not set</strong><small id="target-method">Working days × 8 hours</small></div>
+        <div class="metric"><div class="metric-head"><span>Remaining</span><span class="metric-mark">↗</span></div><strong id="remaining">—</strong><small id="remaining-sub">To reach target</small></div>
+        <div class="metric"><div class="metric-head"><span>Recorded days</span><span class="metric-mark">▦</span></div><strong id="days">0</strong><small>Unique attendance dates</small></div>
+        <div class="metric"><div class="metric-head"><span>Records cached</span><span class="metric-mark">☷</span></div><strong id="count">0</strong><small>Across all months</small></div>
+      </section>
+      <div class="tabs" role="tablist" aria-label="Views">
+        <button class="tab active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+        <button class="tab" data-tab="records" role="tab" aria-selected="false">Daily records</button>
+        <button class="tab" data-tab="import" role="tab" aria-selected="false">Import / Settings</button>
+      </div>
+      <section data-panel="overview">
+        <div class="section-heading"><h2>Calendar-week breakdown</h2><span class="section-tag">40h / week</span></div>
+        <p class="help-text">Fixed weeks: 1–7, 8–14, 15–21, 22–28, 29–end. Only positive excess is carried forward. Monthly totals count actual hours once.</p>
+        <div class="week-table-wrap"><table class="week-table"><thead><tr><th>Dates</th><th>Actual</th><th>Carry in</th><th>Extra →</th></tr></thead><tbody id="week-rows"></tbody></table></div>
+        <div class="note" id="last-sync">No HRMS scan yet.</div>
+      </section>
+      <section data-panel="records" hidden>
+        <div class="section-heading"><h2>Recorded attendance</h2><button id="export-csv" class="text-button">Export CSV ↓</button></div>
+        <p class="help-text">Durations come from HRMS. WFH time derived from punches is marked with *.</p>
+        <div class="record-list" id="daily-rows"></div>
+      </section>
+      <section data-panel="import" hidden>
+        <h2>Sync visible HRMS attendance</h2>
+        <p class="help-text">Visit your HRMS attendance table, then click Sync. For paginated tables, sync each page.</p>
+        <button class="primary-action" id="scan">↻ &nbsp; Sync current HRMS page</button>
+        <p class="helper-feedback" id="scan-status" role="status"></p>
+        <div class="divider"></div>
+        <h2>Paste attendance rows</h2>
+        <p class="help-text">Copy your HRMS table as text. Supported: date, duty time, punch in/out, “5 hr 40.62 min”, decimal hours, and P/W/WP/H/WFH.</p>
+        <textarea id="pasted" rows="5" spellcheck="false" placeholder="30-10-2026   09:00 AM   05:30 PM   07:21 AM   01:01 PM   5 hr 40.62 min   5.68   WP"></textarea>
+        <button class="secondary-action" id="import">Import pasted rows</button>
+        <p class="helper-feedback" id="import-status" role="status"></p>
+        <div class="divider"></div>
+        <h2>Month settings</h2>
+        <p class="help-text" id="calendar-explanation">The target is recalculated as scheduled working days × 8 hours. October 2026 uses your confirmed 17 days; other months use a calendar estimate.</p>
+        <label class="form-label" for="working-days">Optional confirmed working-day count for this month</label>
+        <div class="input-row"><input type="number" min="0" max="31" step="1" id="working-days" placeholder="Automatic"><button class="secondary-action" id="save-target">Confirm days</button><button class="subtle-action" id="auto-target">Use auto</button></div>
+        <p class="help-text">For example, 17 scheduled working days automatically means a 136-hour target. This is a per-month count, not a fixed 136-hour target for other months.</p>
+        <div class="divider"></div>
+        <h2>Automatic calendar settings</h2>
+        <p class="help-text">Choose scheduled weekdays. Automatic mode counts those dates, excludes H/W off-days seen in imported HRMS records, and applies the exceptions below. It cannot know holidays that are not yet loaded.</p>
+        <span class="form-label">Regular working days (all months)</span>
+        <div class="weekdays" role="group" aria-label="Regular working days">
+          <label><input type="checkbox" name="workweek" value="0"> Sun</label>
+          <label><input type="checkbox" name="workweek" value="1"> Mon</label>
+          <label><input type="checkbox" name="workweek" value="2"> Tue</label>
+          <label><input type="checkbox" name="workweek" value="3"> Wed</label>
+          <label><input type="checkbox" name="workweek" value="4"> Thu</label>
+          <label><input type="checkbox" name="workweek" value="5"> Fri</label>
+          <label><input type="checkbox" name="workweek" value="6"> Sat</label>
+        </div>
+        <label class="form-label" for="excluded-days">Extra days off this month (day numbers)</label>
+        <input type="text" id="excluded-days" placeholder="e.g. 5, 12, 21" spellcheck="false">
+        <label class="form-label" for="included-days">Additional scheduled working days this month</label>
+        <input type="text" id="included-days" placeholder="e.g. 9, 30" spellcheck="false">
+        <button class="secondary-action calendar-save" id="save-calendar">Save calendar rules</button>
+        <p class="help-text">Weekend work (WP) still counts toward worked hours, but does not automatically become an official scheduled workday.</p>
+        <label class="form-label" for="minute-mode">HRMS minute suffix interpretation</label>
+        <select id="minute-mode"><option value="mmss">MM.SS (e.g. 40.62 = 40m 62s)</option><option value="decimal">Decimal minutes (40.62 = 40m 37s)</option></select>
+        <p class="help-text">Default follows the previous attendance calculation convention. Changing this only affects future scans/imports; reimport older rows if needed.</p>
+        <div class="divider"></div>
+        <button class="danger-text" id="clear-month">Delete cached records for selected month</button>
+      </section>
+    </div>
+    <footer><div><span class="footer-dot"></span> Read-only • Local-only • No passwords</div><span>v0.2.0</span></footer>
+  </main>
+</body>
+</html>
